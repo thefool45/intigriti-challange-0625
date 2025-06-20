@@ -1,0 +1,12 @@
+Flask
+Werkzeug
+Jinja2
+itsdangerous
+click
+Flask-SQLAlchemy
+Flask-Login
+SQLAlchemy
+greenlet
+selenium
+gunicorn
+python-dotenv

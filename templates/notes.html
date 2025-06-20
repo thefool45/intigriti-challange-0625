@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Notes</title>
+  <link rel="preconnect" href="https://stackpath.bootstrapcdn.com">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+  <link rel="stylesheet" href="{{ url_for('static', filename='challenge_styles.css') }}">
+</head>
+<body>
+{% raw %}
+<div id="app">
+  <div class="toast-container" v-if="showToast">
+    <div class="toast-notification" :class="toastType">
+      <div class="toast-content">
+        <i class="toast-icon" :class="toastIcon"></i>
+        <span class="toast-message">{{ message }}</span>
+        <button class="toast-close" @click="hideToast">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="toast-progress">
+        <div class="toast-progress-bar" :style="{ width: toastProgress + '%' }"></div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a class="navbar-brand" href="#">
+        <i class="fas fa-sticky-note"></i>
+        My Notes App
+      </a>
+      <ul class="navbar-nav">
+        <li v-if="isLoggedIn" class="nav-item">
+          <a class="nav-link" href="#" @click="logout">
+            <i class="fas fa-sign-out-alt mr-1"></i> Logout
+          </a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container main-content">
+    <section v-if="!isLoggedIn" class="row justify-content-center fade-in">
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="mb-0">
+              <i class="fas fa-user-circle"></i>
+              Login / Register
+            </h2>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label for="username">
+                <i class="fas fa-user mr-1"></i> Username
+              </label>
+              <input type="text" id="username" class="form-control" v-model="username" placeholder="Enter your username">
+            </div>
+            <div class="form-group">
+              <label for="password">
+                <i class="fas fa-lock mr-1"></i> Password
+              </label>
+              <input type="password" id="password" class="form-control" v-model="password" placeholder="Enter your password">
+            </div>
+            <div class="d-flex">
+              <button class="btn btn-primary mr-2" @click="login">
+                <i class="fas fa-sign-in-alt mr-1"></i> Login
+              </button>
+              <button class="btn btn-secondary" @click="register">
+                <i class="fas fa-user-plus mr-1"></i> Register
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section v-else class="fade-in">
+      <div class="welcome-section">
+        <div class="welcome-text">
+          <h2>
+            <i class="fas fa-book"></i>
+            Welcome, {{ username }}
+          </h2>
+          <p>Manage your notes securely in your personal instance.</p>
+        </div>
+        <div class="instance-info">
+          <div class="instance-id">
+            <i class="fas fa-fingerprint"></i>
+            Instance ID: {{ instanceId }}
+          </div>
+          <div class="report-form">
+            <div class="input-group">
+              <input type="text" class="form-control" v-model="visitUrl" placeholder="Enter URL to report">
+              <div class="input-group-append">
+                <button class="btn btn-warning" @click="startBot">
+                  <i class="fas fa-bug mr-1"></i> Report
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="mb-0">
+            <i class="fas fa-plus-circle"></i>
+            Add a New Note
+          </h3>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label for="newNote">
+              <i class="fas fa-pen mr-1"></i> Write a note
+            </label>
+            <textarea id="newNote" class="form-control" v-model="newNote" placeholder="Type your note here" rows="3"></textarea>
+            <button class="btn btn-success mt-3" @click="addNote">
+              <i class="fas fa-save mr-1"></i> Add Note
+            </button>
+          </div>
+          
+          <hr>
+          
+          <div class="form-group">
+            <label>
+              <i class="fas fa-file-upload mr-1"></i> Upload a file to add note
+            </label>
+            <div class="custom-file">
+              <input type="file" class="custom-file-input" id="customFile" @change="uploadFile">
+              <label class="custom-file-label" for="customFile">Choose file</label>
+            </div>
+            <small class="form-text text-muted">
+              <i class="fas fa-info-circle mr-1"></i> Maximum file size: 20KB
+            </small>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+          <h3 class="mb-0">
+            <i class="fas fa-list-alt"></i>
+            Your Notes
+          </h3>
+        </div>
+        <ul class="list-group list-group-flush">
+          <li v-for="note in notes" :key="note.id" class="list-group-item d-flex justify-content-between align-items-center">
+            <span class="note-content" v-html="note.content"></span>
+            <button v-if="note.id" class="delete-button" @click="deleteNote(note.id)" title="Delete note">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </li>
+          <li v-if="notes.length === 0" class="list-group-item empty-state">
+            <i class="fas fa-sticky-note"></i>
+            <p>No notes yet. Add your first note above!</p>
+          </li>
+        </ul>
+      </div>
+    </section>
+  </div>
+</div>
+{% endraw %}
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+<script>
+  $(document).ready(function() {
+    $(".custom-file-input").on("change", function() {
+      var fileName = $(this).val().split("\\").pop();
+      $(this).siblings(".custom-file-label").addClass("selected").html(fileName || "Choose file");
+    });
+  });
+</script>
+</body>
+</html>
